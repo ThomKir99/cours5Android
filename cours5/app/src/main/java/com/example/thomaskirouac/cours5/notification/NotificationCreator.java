@@ -11,7 +11,7 @@ public class NotificationCreator {
 
 public static Notification createNotificationForMessage(Context context, MessageModel messageModel){
     NotificationCompat.Builder builder = new NotificationCompat.Builder(context,"42")
-            .setSmallIcon(R.drawable.Choice_toxicity_icon)
+            .setSmallIcon(R.drawable.choice_toxicity_icon)
             .setContentTitle(messageModel.getSender())
             .setContentText(messageModel.getMessage())
             .setPriority(NotificationCompat.PRIORITY_DEFAULT);
