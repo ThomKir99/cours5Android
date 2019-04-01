@@ -10,15 +10,20 @@ import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.example.thomaskirouac.cours5.MainActivity;
 import com.example.thomaskirouac.cours5.R;
+import com.example.thomaskirouac.cours5.notification.model.ImportantMessageModel;
 import com.example.thomaskirouac.cours5.notification.model.MessageModel;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+
+import static android.content.ContentValues.TAG;
 
 public class NotificationService extends Service {
     public static final String CHANNEL_ID = "NotificationService";
@@ -38,6 +43,7 @@ public class NotificationService extends Service {
     public void createNotificationChannel() {
         createNotificationChannelService();
         createNotificationChannelMessage();
+        createImportantNotificationChannelMessage();
     }
 
     private void createNotificationChannelService(){
@@ -59,6 +65,18 @@ public class NotificationService extends Service {
             CharSequence channelName = "NotificationMessage";
             String channelDescription = "Notification de message";
             int channelImportance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel= new NotificationChannel(channelId, channelName,channelImportance);
+            channel.setDescription(channelDescription);
+            notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+    private void createImportantNotificationChannelMessage(){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            String channelId= "43";
+            CharSequence channelName = "NotificationMessage";
+            String channelDescription = "Notification de message";
+            int channelImportance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel= new NotificationChannel(channelId, channelName,channelImportance);
             channel.setDescription(channelDescription);
             notificationManager = getSystemService(NotificationManager.class);
@@ -90,10 +108,44 @@ public class NotificationService extends Service {
                 }
             }
         });
+        database.collection("NotificationImportant")
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot snapshots,
+                                        @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.w(TAG, "listen:error", e);
+                            return;
+                        }
+
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            switch (dc.getType()) {
+
+                                case ADDED:
+                                    ImportantMessageModel messageModel = dc.getDocument().toObject(ImportantMessageModel.class) ;
+                                    sendImportantNotificationForMessage(messageModel);
+                                    break;
+                                case MODIFIED:
+                                    Log.d(TAG, "Modified city: " + dc.getDocument().getData());
+                                    break;
+                                case REMOVED:
+                                    Log.d(TAG, "Removed city: " + dc.getDocument().getData());
+                                    break;
+                            }
+                        }
+
+                    }
+                });
     }
 
     private void sendNotificationForMessage(MessageModel messageModel) {
         Notification notification= NotificationCreator.createNotificationForMessage(this,messageModel);
+        notificationManager.notify(idNotification,notification);
+        idNotification++;
+    }
+
+    private void sendImportantNotificationForMessage(ImportantMessageModel messageModel) {
+        Notification notification= NotificationCreator.createImportantNotificationForMessage(this,messageModel);
         notificationManager.notify(idNotification,notification);
         idNotification++;
     }

@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.thomaskirouac.cours5.notification.NotificationService;
+import com.example.thomaskirouac.cours5.notification.model.ImportantMessageModel;
 import com.example.thomaskirouac.cours5.notification.model.MessageModel;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -42,6 +43,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
              sendMessage();
+            }
+        });
+        findViewById(R.id.button_importantMessage).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendImportantMessage();
+            }
+        });
+    }
+
+    private void sendImportantMessage() {
+        EditText editTextMessage = findViewById(R.id.editText_message);
+        ImportantMessageModel messageModel = new ImportantMessageModel(editTextMessage.getText().toString(),auth.getCurrentUser().getEmail());
+        database.collection("NotificationImportant").add(messageModel).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentReference> task) {
+                Toast.makeText(getApplicationContext(), "Important Message sent" , Toast.LENGTH_LONG).show();
             }
         });
     }
